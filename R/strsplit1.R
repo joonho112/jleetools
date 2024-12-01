@@ -20,6 +20,10 @@
 #' # Split a CSV string
 #' strsplit1("a,b,c", split = ",")
 strsplit1 <- function(x, split) {
-  strsplit(x, split = split)[[1]]
+  result <- strsplit(x, split = split)[[1]]
+  if (length(result) == 0) {
+    return("")
+  }
+  result
 }
 
