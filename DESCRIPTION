@@ -30,4 +30,14 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Imports: 
-    stringr
+    dplyr,
+    ggplot2,
+    glue,
+    haven,
+    janitor,
+    readr,
+    rlang,
+    see,
+    stringr,
+    tibble,
+    writexl
