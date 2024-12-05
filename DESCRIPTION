@@ -40,4 +40,5 @@ Imports:
     see,
     stringr,
     tibble,
+    treemapify,
     writexl
