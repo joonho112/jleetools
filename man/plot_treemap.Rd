@@ -38,11 +38,6 @@ library(treemapify)
 library(see)
 
 # Example data
-df <- data.frame(
-  type1 = c("A", "A", "B", "B"),
-  type2 = c("A1", "A2", "B1", "B2"),
-  value = c(30, 70, 50, 50)
-)
 
 # Generate the treemap
 plot_treemap(df, type1, type2, value, type2_label = "Subcategories")
