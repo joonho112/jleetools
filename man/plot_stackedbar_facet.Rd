@@ -38,6 +38,7 @@ for percentages within each bar and total group sums above each bar. The y-axis 
 formatted with commas, and bar colors can be customized using a specified color palette.
 }
 \examples{
+\dontrun{
 # Example dataset
 library(dplyr)
 df <- data.frame(
@@ -57,5 +58,7 @@ plot_stackedbar_facet(
   palette_name = "Set3",
   decimal = 1
 )
+}
+
 
 }

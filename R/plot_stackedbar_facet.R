@@ -15,6 +15,7 @@
 #' @return A ggplot object representing the stacked bar chart with optional faceting and labels.
 #'
 #' @examples
+#' \dontrun{
 #' # Example dataset
 #' library(dplyr)
 #' df <- data.frame(
@@ -34,6 +35,8 @@
 #'   palette_name = "Set3",
 #'   decimal = 1
 #' )
+#' }
+#'
 #'
 #' @importFrom dplyr mutate group_by ungroup summarize
 #' @importFrom forcats fct_rev
