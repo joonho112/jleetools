@@ -15,12 +15,13 @@ compile_package_sources(
 \item{output_file}{A character string for the name (and optional path) of the output \code{.md} file.}
 }
 \value{
-This function writes a single \code{.md} file specified by \code{output_file},
-containing the concatenated contents of the README, R scripts, and Rd files.
+The function writes a single \code{.md} file (specified by \code{output_file}) containing
+the concatenated contents of the README, R scripts, Rd files, and C/C++ source files.
 }
 \description{
 This function reads and concatenates an R package's \code{README.md}, all \code{.R} scripts in the \verb{R/} folder,
-and all \code{.Rd} files in the \verb{man/} folder, producing a single \code{.md} file that contains the combined text.
+all \code{.Rd} files in the \verb{man/} folder, and all recognized source files in \verb{src/} (e.g., \code{.cpp}, \code{.h}, \code{.win}).
+The result is a single \code{.md} file containing all these concatenated texts.
 }
 \examples{
 \dontrun{

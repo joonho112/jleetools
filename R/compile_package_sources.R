@@ -1,13 +1,14 @@
 #' Compile Package Sources into a Single Markdown File
 #'
 #' This function reads and concatenates an R package's `README.md`, all `.R` scripts in the `R/` folder,
-#' and all `.Rd` files in the `man/` folder, producing a single `.md` file that contains the combined text.
+#' all `.Rd` files in the `man/` folder, and all recognized source files in `src/` (e.g., `.cpp`, `.h`, `.win`).
+#' The result is a single `.md` file containing all these concatenated texts.
 #'
 #' @param package_path A character string indicating the path to the local R package directory.
 #' @param output_file A character string for the name (and optional path) of the output `.md` file.
 #'
-#' @return This function writes a single `.md` file specified by \code{output_file},
-#'         containing the concatenated contents of the README, R scripts, and Rd files.
+#' @return The function writes a single `.md` file (specified by \code{output_file}) containing
+#'         the concatenated contents of the README, R scripts, Rd files, and C/C++ source files.
 #'
 #' @examples
 #' \dontrun{
@@ -81,7 +82,32 @@ compile_package_sources <- function(package_path,
   }
   rd_scripts_text <- paste(rd_scripts, collapse = "\n")
 
-  # 4) Combine README -> R scripts -> Rd files in that order
+  # 4) Read all recognized source files from src/ folder
+  #    We look for .cpp, .h, .win, or similar. Adjust pattern as needed.
+  src_folder_path <- file.path(package_path, "src")
+  src_scripts <- character(0)
+  if (dir.exists(src_folder_path)) {
+    # Match .cpp, .h, .win (case-insensitive). Add more extensions if needed.
+    src_files <- list.files(
+      src_folder_path,
+      pattern = "\\.(cpp|h|win)$",
+      full.names = TRUE,
+      ignore.case = TRUE
+    )
+    for (sf in src_files) {
+      cat(sprintf("Reading source file: %s\n", sf))
+      s_lines <- readLines(sf, warn = FALSE, encoding = "UTF-8")
+      # Optional header to mark each file
+      file_header <- paste0("\n\n## Source File: ", basename(sf), "\n\n")
+      src_scripts <- c(src_scripts, file_header, s_lines)
+    }
+  } else {
+    cat("No src folder found.\n")
+  }
+  src_scripts_text <- paste(src_scripts, collapse = "\n")
+
+  # 5) Combine everything in a single text
+  #    README -> R scripts -> Rd files -> src files
   final_text <- paste(
     "# Combined Package Sources\n\n",
     "## 1) README.md\n\n",
@@ -92,11 +118,14 @@ compile_package_sources <- function(package_path,
     "\n\n---\n",
     "## 3) Rd Files\n\n",
     rd_scripts_text,
+    "\n\n---\n",
+    "## 4) C/C++ Source Files\n\n",
+    src_scripts_text,
     "\n",
     sep = ""
   )
 
-  # 5) Write the result to the specified output_file
+  # 6) Write the result to output_file
   cat(sprintf("Writing all content to: %s\n", output_file))
   writeLines(final_text, con = output_file, useBytes = TRUE)
 }
