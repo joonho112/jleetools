@@ -2,31 +2,39 @@
 % Please edit documentation in R/tabb.R
 \name{tabb}
 \alias{tabb}
-\title{Tabulate a Variable with Percentages}
+\title{Tabulate Frequencies & Percentages (numeric-safe, full print)}
 \usage{
-tabb(data, var)
+tabb(data, var, digits = 1, value_digits = 1)
 }
 \arguments{
-\item{data}{A data frame containing the variable to be tabulated.}
+\item{data}{A data frame.}
 
-\item{var}{The variable to tabulate (unquoted).}
+\item{var}{Variable to tabulate (unquoted).}
+
+\item{digits}{Integer; decimals in the \strong{percent} column (default \code{1}).}
+
+\item{value_digits}{NULL (default) or integer; if the variable is \emph{numeric}
+and \code{value_digits} is set, the values are \strong{rounded} to that many decimal
+places \emph{before} tabulation and shown with trailing zeros removed.}
 }
 \value{
-A tibble containing the unique values of the variable, their frequencies, and percentages.
-A "Total" row is also included with the overall sum.
+A \strong{data.frame} with columns
+\itemize{
+\item \verb{<var>} – distinct values (character, after optional rounding)
+\item \code{n} – frequency
+\item \code{percent} – formatted percentage string.
+A “Total” row (and a \verb{<NA>} row, if applicable) is appended last.
+}
 }
 \description{
-The \code{tabb} function provides a simple way to tabulate a variable, calculate frequencies, and format percentages.
-It is particularly useful for creating a quick summary of categorical variables, inspired by Stata's \code{tab} command.
+Creates a one-way frequency table like Stata’s \code{tab}, but
+\emph{keeps numeric values in numeric order} and lets you round the displayed
+values of a continuous variable.
 }
 \examples{
 \dontrun{
-# Example with the mtcars dataset
-tabb(mtcars, cyl)
-
-# Example with a custom dataset
-df <- data.frame(category = c("A", "B", "A", "C", "B", "A"))
-tabb(df, category)
+tabb(mtcars, cyl)                 # categorical
+tabb(mtcars, mpg, value_digits=2) # continuous, round to 2 dp
 }
 
 }

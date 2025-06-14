@@ -1,62 +1,85 @@
-#' Tabulate a Variable with Percentages
+#' Tabulate Frequencies & Percentages (numeric-safe, full print)
 #'
-#' The `tabb` function provides a simple way to tabulate a variable, calculate frequencies, and format percentages.
-#' It is particularly useful for creating a quick summary of categorical variables, inspired by Stata's `tab` command.
+#' Creates a one-way frequency table like Stata’s `tab`, but
+#' *keeps numeric values in numeric order* and lets you round the displayed
+#' values of a continuous variable.
 #'
-#' @param data A data frame containing the variable to be tabulated.
-#' @param var The variable to tabulate (unquoted).
+#' @param data   A data frame.
+#' @param var    Variable to tabulate (unquoted).
+#' @param digits Integer; decimals in the **percent** column (default `1`).
+#' @param value_digits NULL (default) or integer; if the variable is *numeric*
+#'   and `value_digits` is set, the values are **rounded** to that many decimal
+#'   places *before* tabulation and shown with trailing zeros removed.
 #'
-#' @return A tibble containing the unique values of the variable, their frequencies, and percentages.
-#' A "Total" row is also included with the overall sum.
+#' @return A **data.frame** with columns
+#'   * `<var>` – distinct values (character, after optional rounding)
+#'   * `n` – frequency
+#'   * `percent` – formatted percentage string.
+#'   A “Total” row (and a `<NA>` row, if applicable) is appended last.
 #'
 #' @examples
 #' \dontrun{
-#' # Example with the mtcars dataset
-#' tabb(mtcars, cyl)
-#'
-#' # Example with a custom dataset
-#' df <- data.frame(category = c("A", "B", "A", "C", "B", "A"))
-#' tabb(df, category)
+#' tabb(mtcars, cyl)                 # categorical
+#' tabb(mtcars, mpg, value_digits=2) # continuous, round to 2 dp
 #' }
 #'
-#' @importFrom dplyr select arrange mutate
-#' @importFrom janitor tabyl adorn_totals adorn_pct_formatting
-#' @importFrom rlang enquo as_label
-#' @importFrom magrittr %>%
 #' @export
-tabb <- function(data, var) {
-  # Capture the variable name
-  var <- rlang::enquo(var)
-  var_name <- rlang::as_label(var)
+#' @importFrom dplyr count mutate arrange bind_rows
+#' @importFrom rlang ensym as_label .data
+#' @importFrom tibble tibble
+tabb <- function(data, var, digits = 1, value_digits = 1) {
+  stopifnot(is.data.frame(data))
+  var_sym  <- rlang::ensym(var)
+  var_name <- rlang::as_label(var_sym)
 
-  # Check if the dataset is empty
-  if (nrow(data) == 0) {
-    message("The dataset is empty. Returning an empty tibble.")
-    return(tibble::tibble(
-      !!var_name := character(0),
-      n = integer(0),
-      percent = character(0)
-    ))
+  # --- Optionally round numeric values BEFORE counting -----------------------
+  if (is.numeric(data[[var_name]]) && !is.null(value_digits)) {
+    data[[var_name]] <- round(data[[var_name]], value_digits)
   }
 
-  # Check if the variable exists in the dataset
-  if (!var_name %in% colnames(data)) {
-    stop(glue::glue("Variable `{var_name}` not found in the dataset."))
+  # --- Raw counts ------------------------------------------------------------
+  tab <- dplyr::count(data, !!var_sym, name = "n", .drop = FALSE)
+  total_n <- sum(tab$n, na.rm = TRUE)
+
+  # --- Percent (numeric) -----------------------------------------------------
+  tab <- dplyr::mutate(tab, percent = n / total_n * 100)
+
+  # --- Order: numeric vs character ------------------------------------------
+  if (is.numeric(tab[[var_name]])) {
+    tab <- dplyr::arrange(tab, !!var_sym)
+  } else {
+    tab <- dplyr::arrange(tab, as.character(!!var_sym))
   }
 
-  # Perform tabulation
-  result <- data %>%
-    janitor::tabyl(!!var) %>%
-    janitor::adorn_totals() %>%
-    janitor::adorn_pct_formatting() %>%
-    dplyr::mutate(
-      percent = dplyr::case_when(
-        .data[[var_name]] == "Total" ~ "100.0%",  # Explicitly handle the "Total" row
-        TRUE ~ percent
-      )
-    ) %>%
-    dplyr::select(all_of(c(var_name, "n", "percent"))) %>%
-    dplyr::arrange(.data[[var_name]])
+  # --- Format columns --------------------------------------------------------
+  pct_fmt <- paste0('%.', digits, 'f%%')
+  tab <- dplyr::mutate(
+    tab,
+    !!var_name := if (is.numeric(!!var_sym))
+      formatC(!!var_sym, format = "f",
+              digits = if (is.null(value_digits)) 6 else value_digits,
+              drop0trailing = TRUE)
+    else as.character(!!var_sym),
+    percent = sprintf(pct_fmt, percent)
+  )
 
-  return(result)
+  # --- Move NA row (if present) to bottom ------------------------------------
+  if (any(is.na(tab[[var_name]]))) {
+    na_row <- dplyr::filter(tab, is.na(.data[[var_name]]))
+    tab    <- dplyr::filter(tab, !is.na(.data[[var_name]]))
+    tab    <- dplyr::bind_rows(tab, na_row)
+  }
+
+  # --- Append Total row ------------------------------------------------------
+  total_row <- tibble::tibble(
+    !!var_name := "Total",
+    n          = total_n,
+    percent    = sprintf(pct_fmt, 100)
+  )
+  tab <- dplyr::bind_rows(tab, total_row)
+
+  # convert tibble → data.frame for full printing
+  as.data.frame(tab, stringsAsFactors = FALSE)
 }
+
+
